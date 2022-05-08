@@ -7,10 +7,7 @@ exports.DefaultOptions = {
         headless: true,
         defaultViewport: null
     },
-    session: false,
-    qrTimeoutMs: 45000,
-    qrRefreshIntervalMs: 20000,
-    authTimeoutMs: 45000,
+    authTimeoutMs: 0,
     qrMaxRetries: 0,
     takeoverOnConflict: false,
     takeoverTimeoutMs: 0,
@@ -77,8 +74,25 @@ exports.MessageTypes = {
     UNKNOWN: 'unknown',
     GROUP_INVITE: 'groups_v4_invite',
     LIST: 'list',
+    LIST_RESPONSE: 'list_response',
     BUTTONS_RESPONSE: 'buttons_response',
-    PAYMENT: 'payment'
+    PAYMENT: 'payment',
+    BROADCAST_NOTIFICATION: 'broadcast_notification',
+    CALL_LOG: 'call_log',
+    CIPHERTEXT: 'ciphertext',
+    DEBUG: 'debug',
+    E2E_NOTIFICATION: 'e2e_notification',
+    GP2: 'gp2',
+    GROUP_NOTIFICATION: 'group_notification',
+    HSM: 'hsm',
+    INTERACTIVE: 'interactive',
+    NATIVE_FLOW: 'native_flow',
+    NOTIFICATION: 'notification',
+    NOTIFICATION_TEMPLATE: 'notification_template',
+    OVERSIZED: 'oversized',
+    PROTOCOL: 'protocol',
+    REACTION: 'reaction',
+    TEMPLATE_BUTTON_REPLY: 'template_button_reply',
 };
 
 /**
