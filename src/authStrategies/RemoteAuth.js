@@ -2,8 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const unzipper = require('unzipper');
-const archiver = require('archiver');
+const tar = require('tar');
 const BaseAuthStrategy = require('./BaseAuthStrategy');
 
 /**
@@ -17,7 +16,6 @@ const BaseAuthStrategy = require('./BaseAuthStrategy');
 class RemoteAuth extends BaseAuthStrategy {
     constructor({ clientId, dataPath, store, backupSyncMs } = {}) {
         super();
-
         const idRegex = /^[-_\w]+$/i;
         if (clientId && !idRegex.test(clientId)) {
             throw new Error('Invalid clientId. Only alphanumeric characters, underscores and hyphens are allowed.');
@@ -26,37 +24,29 @@ class RemoteAuth extends BaseAuthStrategy {
             throw new Error('Invalid backupSyncMs. Accepts values starting from 60000ms {1 minute}.');
         }
         if(!store) throw new Error('Remote database store is required.');
-
         this.store = store;
         this.clientId = clientId;
         this.backupSyncMs = backupSyncMs;
         this.dataPath = path.resolve(dataPath || './.wwebjs_auth/');
         this.requiredDirs = ['Default', 'IndexedDB', 'Local Storage']; /* => Required Files & Dirs in WWebJS to restore session */
     }
-
     async beforeBrowserInitialized() {
         const puppeteerOpts = this.client.options.puppeteer;
         const sessionDirName = this.clientId ? `session-${this.clientId}` : 'session';
         const dirPath = path.join(this.dataPath, sessionDirName);
-
         if (puppeteerOpts.userDataDir && puppeteerOpts.userDataDir !== dirPath) {
             throw new Error('RemoteAuth is not compatible with a user-supplied userDataDir.');
         }
-
         this.userDataDir = dirPath;
         this.sessionName = sessionDirName;
-
         await this.extractRemoteSession();
-
         this.client.options.puppeteer = {
             ...puppeteerOpts,
             userDataDir: dirPath
         };
     }
-
     async logout() {
         await this.deleteRemoteSession();
-
         let pathExists = await this.isValidPath(this.userDataDir);
         if (pathExists) {
             await fs.promises.rm(this.userDataDir, {
@@ -66,7 +56,6 @@ class RemoteAuth extends BaseAuthStrategy {
         }
         clearInterval(this.backupSync);
     }
-
     async authReady() {
         const sessionExists = await this.store.sessionExists({session: this.sessionName});
         if(!sessionExists) {
@@ -78,7 +67,6 @@ class RemoteAuth extends BaseAuthStrategy {
             await self.storeRemoteSession();
         }, this.backupSyncMs);
     }
-
     async storeRemoteSession() {
         try {
             const sessionExists = await this.store.sessionExists({session: this.sessionName});
@@ -96,7 +84,6 @@ class RemoteAuth extends BaseAuthStrategy {
             console.log('RemoteAuth Error => storeRemoteSession: ', error);
         }
     }
-
     async extractRemoteSession() {
         try {
             const sessionExists = await this.store.sessionExists({session: this.sessionName});
@@ -116,12 +103,10 @@ class RemoteAuth extends BaseAuthStrategy {
             console.log('RemoteAuth Error => extractRemoteSession: ', error);
         }
     }
-
     async deleteRemoteSession() {
         try {
             const sessionExists = await this.store.sessionExists({session: this.sessionName});
             if (sessionExists) await this.store.delete({session: this.sessionName});
-
         } catch (error) {
             console.log('RemoteAuth Error => deleteRemoteSession: ', error);
         }
@@ -129,19 +114,19 @@ class RemoteAuth extends BaseAuthStrategy {
 
     async compressSession() {
         try {
-            const archive = archiver('zip');
             const stream = fs.createWriteStream(`${this.sessionName}.zip`);
 
             await this.deleteMetadata();
             return new Promise((resolve, reject) => {
-                archive
-                    .directory(this.userDataDir, false)
-                    .on('error', err => reject(err))
-                    .pipe(stream);
-
-                stream.on('close', () => resolve());
-                archive.finalize();
+                tar.create({
+                    sync: true,
+                    gzip: true,
+                }, [this.userDataDir])
+                    .on("data", (data) => stream.write(data))
+                    .on("error", (error) => reject(error))
+                    .on("end", () => stream.end());
             });
+            stream.on("close", ()=> resolve());
         } catch (error) {
             console.log('RemoteAuth Error => compressSession: ', error);
         }
@@ -149,19 +134,15 @@ class RemoteAuth extends BaseAuthStrategy {
 
     async unCompressSession() {
         try {
-            var stream = fs.createReadStream(`RemoteAuth-${this.sessionName}.zip`);
-            return new Promise((resolve, reject) => {
-                stream.pipe(unzipper.Extract({
-                    path: this.userDataDir
-                }))
-                    .on('error', err => reject(err))
-                    .on('finish', () => resolve());
+            return tar.extract({
+                cwd: this.userDataDir,
+                file: `RemoteAuth-${this.sessionName}.
+                `
             });
         } catch (error) {
             console.log('RemoteAuth Error => unCompressSession: ', error);
         }
     }
-
     async deleteMetadata() {
         try {
             /* First Level */
@@ -181,7 +162,6 @@ class RemoteAuth extends BaseAuthStrategy {
                     }
                 }
             }
-
             /* Second Level */
             let sessionFilesDefault = await fs.promises.readdir(`${this.userDataDir}/Default`);
             for (let element of sessionFilesDefault) {
@@ -203,7 +183,6 @@ class RemoteAuth extends BaseAuthStrategy {
             console.log('RemoteAuth Error => deleteMetadata: ', error);
         }
     }
-
     async isValidPath(path) {
         try {
             await fs.promises.access(path);
@@ -212,7 +191,6 @@ class RemoteAuth extends BaseAuthStrategy {
             return false;
         }
     }
-
     async delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
