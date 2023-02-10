@@ -7,6 +7,10 @@ const client = new Client({
 
 client.initialize();
 
+client.on('loading_screen', (percent, message) => {
+    console.log('LOADING SCREEN', percent, message);
+});
+
 client.on('qr', (qr) => {
     // NOTE: This event will not be fired if a session is specified.
     console.log('QR RECEIVED', qr);
@@ -251,6 +255,15 @@ client.on('group_update', (notification) => {
 
 client.on('change_state', state => {
     console.log('CHANGE STATE', state );
+});
+
+// Change to false if you don't want to reject incoming calls
+let rejectCalls = true;
+
+client.on('call', async (call) => {
+    console.log('Call received, rejecting. GOTO Line 261 to disable', call);
+    if (rejectCalls) await call.reject();
+    await client.sendMessage(call.from, `[${call.fromMe ? 'Outgoing' : 'Incoming'}] Phone call from ${call.from}, type ${call.isGroup ? 'group' : ''} ${call.isVideo ? 'video' : 'audio'} call. ${rejectCalls ? 'This call was automatically rejected by the script.' : ''}`);
 });
 
 client.on('disconnected', (reason) => {
