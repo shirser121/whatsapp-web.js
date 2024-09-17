@@ -9,7 +9,7 @@ exports.ExposeStore = (moduleRaidStr) => {
     window.Store.AppState = window.mR.findModule('Socket')[0].Socket;
     window.Store.Conn = window.mR.findModule('Conn')[0].Conn;
     window.Store.BlockContact = window.mR.findModule('blockContact')[0];
-    window.Store.Call = window.mR.findModule((module) => module.default && module.default.Call)[0].default.Call;
+    window.Store.Call = window.mR.findModule((module) => module?.default && module?.default?.Call)[0]?.default?.Call;
     window.Store.Cmd = window.mR.findModule('Cmd')[0].Cmd;
     window.Store.CryptoLib = window.mR.findModule('decryptE2EMedia')[0];
     window.Store.DownloadManager = window.mR.findModule('downloadManager')[0].downloadManager;
