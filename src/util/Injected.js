@@ -619,10 +619,7 @@ exports.LoadUtils = () => {
 
     window.WWebJS.getChannelMetadata = async (inviteCode) => {
         const response =
-            await window.Store.ChannelUtils.queryNewsletterMetadataByInviteCode(
-                inviteCode,
-                window.Store.ChannelUtils.getRoleByIdentifier(inviteCode)
-            );
+            await window.Store.ChannelUtils.queryNewsletterMetadataByInviteCode(inviteCode);
 
         const picUrl = response.newsletterPictureMetadataMixin.picture[0].queryPictureDirectPathOrMatchedOrEmptyResponseMixinGroup.value.directPath;
 
@@ -638,7 +635,7 @@ exports.LoadUtils = () => {
                 updatedAtTs: response.newsletterDescriptionMetadataMixin.descriptionQueryDescriptionResponseMixin.updateTime
             },
             inviteLink: `https://whatsapp.com/channel/${response.newsletterInviteLinkMetadataMixin.inviteCode}`,
-            membershipType: window.Store.ChannelUtils.getRoleByIdentifier(inviteCode) || 'viewer',
+            membershipType: 'viewer',
             stateType: response.newsletterStateMetadataMixin.stateType,
             pictureUrl: picUrl ? `https://pps.whatsapp.net${picUrl}` : null,
             subscribersCount: response.newsletterSubscribersMetadataMixin.subscribersCount,
