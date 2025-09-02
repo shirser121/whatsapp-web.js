@@ -102,6 +102,11 @@ exports.ExposeStore = () => {
     window.Store.PinnedMsgUtils = window.require('WAWebSendPinMessageAction');
     window.Store.UploadUtils = window.require('WAWebUploadManager');
     window.Store.WAWebStreamModel = window.require('WAWebStreamModel');
+
+    window.Store.User = {
+        ...window.Store.User,
+        getMaybeMePnUser: window.Store.User.getMaybeMeUser
+    };
     
     window.Store.Settings = {
         ...window.require('WAWebUserPrefsGeneral'),
